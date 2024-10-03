@@ -26,62 +26,61 @@ public class MyAction implements Action {
 
     @Override
     public String getUrlName() {
-        return "my-action";
+        return "from-queue";
     }
 
     @GET
     public void doIndex(StaplerRequest req, StaplerResponse rsp) throws IOException {
         LOGGER.info("doIndex called");
         String queueId = req.getParameter("queueid");
+        long id = 0;
+        try {
+            id = Long.parseLong(queueId);
+        } catch (NumberFormatException e) {
+            LOGGER.warning("queue ID is not an integer: " + queueId);
+            rsp.sendError(404, "Invalid QueueID " + queueId);
+            return;
+        }
 
         // Logic to check if the build has started
-        if (buildStarted(queueId)) {
-            rsp.sendRedirect2(buildUrl(queueId));
+        if (buildStarted(id)) {
+            String newUrl = buildUrl(id);
+            if (newUrl == null) {
+                rsp.sendError(404, "This queued job couldn't be found " + id);
+                return;
+            }
+            rsp.sendRedirect2(newUrl);
         } else {
             rsp.sendError(404, "Build not started yet " + queueId);
         }
     }
 
-    private boolean buildStarted(String queueId) {
-        try {
-            // Parse the queue ID
-            long id = Long.parseLong(queueId);
-
-            // Get the queue item
-            Queue.Item item = Jenkins.get().getQueue().getItem(id);
-            if (item == null) {
-                // If the item is not in the queue, it might have started
-                return true;
-            }
-
-            // If the item is still in the queue, the build has not started
-            return false;
-        } catch (NumberFormatException e) {
-            LOGGER.warning("Invalid queue ID: " + queueId);
-            return false;
+    private boolean buildStarted(Long queueId) {
+        // Get the queue item
+        Queue.Item item = Jenkins.get().getQueue().getItem(queueId);
+        if (item == null) {
+            // If the item is not in the queue, it might have started
+            return true;
         }
+
+        // If the item is still in the queue, the build has not started
+        return false;
     }
 
-    private String buildUrl(String queueId) {
-        try {
-            // Parse the queue ID
-            long id = Long.parseLong(queueId);
-
-            // Iterate through all jobs and their builds to find the matching queue ID
-            for (Job<?, ?> job : Jenkins.get().getAllItems(Job.class)) {
-                for (Run<?, ?> run : job.getBuilds()) {
-                    if (run.getQueueId() == id) {
-                        // Construct the URL for the build
-                        return Jenkins.get().getRootUrl() + run.getUrl();
-                    }
+    private String buildUrl(Long queueId) {
+        LOGGER.info("Looking for Job that had the queue " + queueId);
+        // Iterate through all jobs and their builds to find the matching queue ID
+        for (Job<?, ?> job : Jenkins.get().getAllItems(Job.class)) {
+            LOGGER.info("Anaylyzing all jobs ");
+            for (Run<?, ?> run : job.getBuilds()) {
+                if (run.getQueueId() == queueId) {
+                    // Construct the URL for the build
+                    return Jenkins.get().getRootUrl() + run.getUrl();
                 }
             }
-
-            // If no matching build is found, return null or an appropriate message
-            return "Build Not Found";
-        } catch (NumberFormatException e) {
-            LOGGER.warning("Invalid queue ID: " + queueId);
-            return "Invalid queue ID";
         }
+
+        // If no matching build is found, return null or an appropriate message
+        return null;
     }
 }
