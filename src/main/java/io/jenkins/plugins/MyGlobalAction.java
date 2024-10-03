@@ -2,10 +2,9 @@ package io.jenkins.plugins;
 
 import hudson.Extension;
 import hudson.model.Action;
-import hudson.model.Job;
 import java.io.IOException;
 import java.util.logging.Logger;
-import jenkins.model.Jenkins;
+import javax.ws.rs.GET;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -29,8 +28,8 @@ public class MyGlobalAction implements Action {
         return "myglobalaction";
     }
 
+    @GET
     public void doDynamic(StaplerRequest req, StaplerResponse rsp) throws IOException {
-
         LOGGER.info("doDynamic called");
     }
 }
