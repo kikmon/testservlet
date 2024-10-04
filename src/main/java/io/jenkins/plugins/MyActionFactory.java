@@ -25,6 +25,6 @@ public class MyActionFactory extends TransientActionFactory<Job<?, ?>> {
     @Override
     public Collection<? extends Action> createFor(Job<?, ?> target) {
         LOGGER.info("Creating MyAction for job: " + target.getName());
-        return Collections.singleton(new MyAction());
+        return Collections.singleton(new MyAction(target));
     }
 }

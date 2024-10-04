@@ -1,7 +1,7 @@
 package io.jenkins.plugins;
 
 import hudson.Extension;
-import hudson.model.Action;
+import hudson.model.RootAction;
 import java.io.IOException;
 import java.util.logging.Logger;
 import javax.ws.rs.GET;
@@ -9,7 +9,7 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
 @Extension
-public class MyGlobalAction implements Action {
+public class MyGlobalAction implements RootAction {
 
     private static final Logger LOGGER = Logger.getLogger(MyGlobalAction.class.getName());
 

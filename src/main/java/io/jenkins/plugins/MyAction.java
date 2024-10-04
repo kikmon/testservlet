@@ -5,6 +5,7 @@ import hudson.model.Job;
 import hudson.model.Queue;
 import hudson.model.Run;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.logging.Logger;
 import javax.ws.rs.GET;
 import jenkins.model.Jenkins;
@@ -13,6 +14,12 @@ import org.kohsuke.stapler.StaplerResponse;
 
 public class MyAction implements Action {
     private static final Logger LOGGER = Logger.getLogger(MyAction.class.getName());
+
+    private final Job<?, ?> job;
+
+    public MyAction(Job<?, ?> job) {
+        this.job = job;
+    }
 
     @Override
     public String getIconFileName() {
@@ -60,23 +67,29 @@ public class MyAction implements Action {
         Queue.Item item = Jenkins.get().getQueue().getItem(queueId);
         if (item == null) {
             // If the item is not in the queue, it might have started
+            LOGGER.info("Found queueId in normal Queue " + queueId);
             return true;
         }
 
-        // If the item is still in the queue, the build has not started
+        // Maybe the job was just started and is now in the LeftItem queue
+        Collection<Queue.LeftItem> leftItems = Jenkins.get().getQueue().getLeftItems();
+        for (Queue.LeftItem leftitem : leftItems) {
+            if (leftitem.getId() == queueId) {
+                LOGGER.info("Found queueId in Left Queue " + queueId);
+                return true;
+            }
+        }
+
+        LOGGER.info("Found queueId in normal Queue " + queueId);
         return false;
     }
 
     private String buildUrl(Long queueId) {
         LOGGER.info("Looking for Job that had the queue " + queueId);
-        // Iterate through all jobs and their builds to find the matching queue ID
-        for (Job<?, ?> job : Jenkins.get().getAllItems(Job.class)) {
-            LOGGER.info("Anaylyzing all jobs ");
-            for (Run<?, ?> run : job.getBuilds()) {
-                if (run.getQueueId() == queueId) {
-                    // Construct the URL for the build
-                    return Jenkins.get().getRootUrl() + run.getUrl();
-                }
+        for (Run<?, ?> run : job.getBuilds()) {
+            if (run.getQueueId() == queueId) {
+                // Construct the URL for the build
+                return Jenkins.get().getRootUrl() + run.getUrl();
             }
         }
 
