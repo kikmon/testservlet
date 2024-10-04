@@ -2,13 +2,9 @@ package io.jenkins.plugins;
 
 import hudson.model.Action;
 import hudson.model.Job;
-import hudson.model.Queue;
-import hudson.model.Run;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.logging.Logger;
 import javax.ws.rs.GET;
-import jenkins.model.Jenkins;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
 
@@ -50,8 +46,8 @@ public class MyAction implements Action {
         }
 
         // Logic to check if the build has started
-        if (buildStarted(id)) {
-            String newUrl = buildUrl(id);
+        if (BuildUtils.buildStarted(id)) {
+            String newUrl = BuildUtils.buildUrl(job, id);
             if (newUrl == null) {
                 rsp.sendError(404, "This queued job couldn't be found " + id);
                 return;
@@ -60,40 +56,5 @@ public class MyAction implements Action {
         } else {
             rsp.sendError(404, "Build not started yet " + queueId);
         }
-    }
-
-    private boolean buildStarted(Long queueId) {
-        // Get the queue item
-        Queue.Item item = Jenkins.get().getQueue().getItem(queueId);
-        if (item == null) {
-            // If the item is not in the queue, it might have started
-            LOGGER.info("Found queueId in normal Queue " + queueId);
-            return true;
-        }
-
-        // Maybe the job was just started and is now in the LeftItem queue
-        Collection<Queue.LeftItem> leftItems = Jenkins.get().getQueue().getLeftItems();
-        for (Queue.LeftItem leftitem : leftItems) {
-            if (leftitem.getId() == queueId) {
-                LOGGER.info("Found queueId in Left Queue " + queueId);
-                return true;
-            }
-        }
-
-        LOGGER.info("Found queueId in normal Queue " + queueId);
-        return false;
-    }
-
-    private String buildUrl(Long queueId) {
-        LOGGER.info("Looking for Job that had the queue " + queueId);
-        for (Run<?, ?> run : job.getBuilds()) {
-            if (run.getQueueId() == queueId) {
-                // Construct the URL for the build
-                return Jenkins.get().getRootUrl() + run.getUrl();
-            }
-        }
-
-        // If no matching build is found, return null or an appropriate message
-        return null;
     }
 }
